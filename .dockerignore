@@ -1,5 +1,4 @@
-# Build artefacts
-/loki-cardinality-exporter
+# goreleaser scratch dir (not used in ordinary Docker contexts)
 /dist/
 
 # Config with secrets

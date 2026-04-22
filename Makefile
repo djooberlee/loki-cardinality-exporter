@@ -34,8 +34,12 @@ lint: ## golangci-lint run (requires golangci-lint installed)
 run: ## Run from source with local config.json
 	go run . -config ./config.json
 
-docker: ## Build Docker image
-	docker build -t $(BINARY):$(VERSION) -t $(BINARY):latest .
+docker: build ## Build Docker image (requires a local binary; builds one first)
+	docker build \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg COMMIT=$(COMMIT) \
+		--build-arg DATE=$(DATE) \
+		-t $(BINARY):$(VERSION) -t $(BINARY):latest .
 
 clean: ## Remove build artifacts
 	rm -f $(BINARY)
