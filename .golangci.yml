@@ -17,6 +17,17 @@ linters:
 linters-settings:
   gofmt:
     simplify: true
+  errcheck:
+    # Writing to an http.ResponseWriter or to Stderr/Stdout — the error cases
+    # are not actionable for an exporter. Same for json.Encoder in test helpers.
+    exclude-functions:
+      - fmt.Fprint
+      - fmt.Fprintf
+      - fmt.Fprintln
+      - (net/http.ResponseWriter).Write
+      - (*encoding/json.Encoder).Encode
+      - (io.Closer).Close
+      - io.Copy
 
 issues:
   exclude-use-default: false
