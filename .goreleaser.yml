@@ -101,7 +101,15 @@ dockers:
       - "--build-arg=DATE={{ .Date }}"
 
 docker_manifests:
+  # Three manifests pointing at the same arch images:
+  #   :0.1.0    (goreleaser default, convention used by Grafana/Loki/etc.)
+  #   :v0.1.0   (matches the git tag exactly, convention used by Prometheus/node_exporter)
+  #   :latest
   - name_template: "ghcr.io/djooberlee/loki-cardinality-exporter:{{ .Version }}"
+    image_templates:
+      - "ghcr.io/djooberlee/loki-cardinality-exporter:{{ .Version }}-amd64"
+      - "ghcr.io/djooberlee/loki-cardinality-exporter:{{ .Version }}-arm64"
+  - name_template: "ghcr.io/djooberlee/loki-cardinality-exporter:v{{ .Version }}"
     image_templates:
       - "ghcr.io/djooberlee/loki-cardinality-exporter:{{ .Version }}-amd64"
       - "ghcr.io/djooberlee/loki-cardinality-exporter:{{ .Version }}-arm64"
