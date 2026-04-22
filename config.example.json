@@ -1,0 +1,30 @@
+{
+  "listen": ":9105",
+  "scrape_interval": "5m",
+  "lookback": "1h",
+  "datasources": [
+    {
+      "name": "loki-direct",
+      "url": "https://loki.example.com",
+      "basic_auth": {
+        "username": "loki",
+        "password": "REPLACE_ME"
+      }
+    },
+    {
+      "name": "loki-via-grafana-proxy",
+      "url": "https://grafana.example.com/api/datasources/proxy/uid/REPLACE_DS_UID",
+      "headers": {
+        "Authorization": "Bearer glsa_REPLACE_ME"
+      }
+    },
+    {
+      "name": "loki-multitenant",
+      "url": "https://loki.internal:3100",
+      "headers": {
+        "X-Scope-OrgID": "my-tenant"
+      },
+      "insecure_tls": true
+    }
+  ]
+}

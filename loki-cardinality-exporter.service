@@ -1,0 +1,30 @@
+[Unit]
+Description=Loki label cardinality exporter
+Documentation=https://grafana.opscore.org/dev
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=loki-exporter
+Group=loki-exporter
+ExecStart=/usr/local/bin/loki-cardinality-exporter -config /etc/loki-cardinality-exporter/config.json
+Restart=on-failure
+RestartSec=10
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,49 @@
+name: Bug report
+description: Something is not working as expected.
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Exporter version
+      description: Output of `loki-cardinality-exporter -version`
+      placeholder: "v0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: loki
+    attributes:
+      label: Loki version(s)
+      placeholder: "2.9.4, 3.5.12"
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Clear description of the issue, plus what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Configuration
+      description: Relevant `config.json` snippet (redact secrets / basic-auth passwords).
+      render: json
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / metrics output
+      description: Stderr log, contents of /metrics, anything relevant.
+      render: text
+    validations:
+      required: false
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, architecture, deployment method (binary / systemd / Docker / k8s).
+    validations:
+      required: false

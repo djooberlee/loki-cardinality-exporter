@@ -1,0 +1,117 @@
+version: 2
+
+project_name: loki-cardinality-exporter
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: default
+    main: ./
+    binary: loki-cardinality-exporter
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .Commit }}
+      - -X main.date={{ .Date }}
+    flags:
+      - -trimpath
+
+archives:
+  - id: default
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE
+      - README.md
+      - config.example.json
+      - loki-cardinality-exporter.service
+
+checksum:
+  name_template: checksums.txt
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - Merge pull request
+      - Merge branch
+
+dockers:
+  - image_templates:
+      - "ghcr.io/djooberlee/loki-cardinality-exporter:{{ .Version }}-amd64"
+      - "ghcr.io/djooberlee/loki-cardinality-exporter:latest-amd64"
+    use: buildx
+    goos: linux
+    goarch: amd64
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
+      - "--label=org.opencontainers.image.description=Prometheus exporter for per-label cardinality in Loki"
+      - "--label=org.opencontainers.image.licenses=Apache-2.0"
+      - "--label=org.opencontainers.image.source=https://github.com/djooberlee/loki-cardinality-exporter"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
+      - "--label=org.opencontainers.image.revision={{ .Commit }}"
+      - "--build-arg=VERSION={{ .Version }}"
+      - "--build-arg=COMMIT={{ .Commit }}"
+      - "--build-arg=DATE={{ .Date }}"
+  - image_templates:
+      - "ghcr.io/djooberlee/loki-cardinality-exporter:{{ .Version }}-arm64"
+      - "ghcr.io/djooberlee/loki-cardinality-exporter:latest-arm64"
+    use: buildx
+    goos: linux
+    goarch: arm64
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--platform=linux/arm64"
+      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
+      - "--label=org.opencontainers.image.description=Prometheus exporter for per-label cardinality in Loki"
+      - "--label=org.opencontainers.image.licenses=Apache-2.0"
+      - "--label=org.opencontainers.image.source=https://github.com/djooberlee/loki-cardinality-exporter"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
+      - "--label=org.opencontainers.image.revision={{ .Commit }}"
+      - "--build-arg=VERSION={{ .Version }}"
+      - "--build-arg=COMMIT={{ .Commit }}"
+      - "--build-arg=DATE={{ .Date }}"
+
+docker_manifests:
+  - name_template: "ghcr.io/djooberlee/loki-cardinality-exporter:{{ .Version }}"
+    image_templates:
+      - "ghcr.io/djooberlee/loki-cardinality-exporter:{{ .Version }}-amd64"
+      - "ghcr.io/djooberlee/loki-cardinality-exporter:{{ .Version }}-arm64"
+  - name_template: "ghcr.io/djooberlee/loki-cardinality-exporter:latest"
+    image_templates:
+      - "ghcr.io/djooberlee/loki-cardinality-exporter:latest-amd64"
+      - "ghcr.io/djooberlee/loki-cardinality-exporter:latest-arm64"
+
+release:
+  github:
+    owner: djooberlee
+    name: loki-cardinality-exporter
+  prerelease: auto
+  draft: false

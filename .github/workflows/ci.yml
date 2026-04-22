@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build & test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: ['1.21', '1.22']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+          check-latest: true
+          cache: true
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: gofmt check
+        run: |
+          diff=$(gofmt -s -d .)
+          if [ -n "$diff" ]; then
+            echo "gofmt issues:"; echo "$diff"; exit 1
+          fi
+
+      - name: go test
+        run: go test -race -count=1 ./...
+
+      - name: build
+        run: go build -o loki-cardinality-exporter .
+
+      - name: smoke test -version
+        run: ./loki-cardinality-exporter -version
+
+  lint:
+    name: golangci-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+      - uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: --timeout=5m

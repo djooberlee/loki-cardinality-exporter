@@ -1,0 +1,24 @@
+# Build artefacts
+/loki-cardinality-exporter
+/dist/
+
+# Config with secrets
+config.json
+
+# Repo metadata
+.git/
+.github/
+.gitignore
+.goreleaser.yml
+.golangci.yml
+
+# Docs / editor
+README.md
+CHANGELOG.md
+CONTRIBUTING.md
+SECURITY.md
+LICENSE
+Makefile
+*.md
+.vscode/
+.idea/
