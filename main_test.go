@@ -121,3 +121,38 @@ func TestScrapeBadStatus(t *testing.T) {
 		t.Errorf("want http 500 error, got %v", err)
 	}
 }
+
+// TestMetricsHandler_ScrapeSuccess verifies that loki_label_cardinality_scrape_success
+// reflects last scrape outcome per datasource, and that a datasource which failed its
+// first scrape still appears in the metrics output (so alerts can fire on it).
+func TestMetricsHandler_ScrapeSuccess(t *testing.T) {
+	state := newState()
+
+	// ds "ok": succeeded, has cardinality
+	state.cardinality["ok"] = map[string]int{"host": 3}
+	state.lastScrape["ok"] = time.Now()
+	state.lastDuration["ok"] = 42 * time.Millisecond
+	state.scrapeSuccess["ok"] = true
+
+	// ds "failed-first": never succeeded, no cardinality entry — only error/attempt recorded
+	state.lastScrape["failed-first"] = time.Now()
+	state.lastDuration["failed-first"] = 5 * time.Second
+	state.scrapeErrors["failed-first"] = 1
+	state.scrapeSuccess["failed-first"] = false
+
+	rec := httptest.NewRecorder()
+	metricsHandler(state)(rec, httptest.NewRequest("GET", "/metrics", nil))
+	body := rec.Body.String()
+
+	want := []string{
+		`loki_label_cardinality{datasource="ok",label="host"} 3`,
+		`loki_label_cardinality_scrape_success{datasource="ok"} 1`,
+		`loki_label_cardinality_scrape_success{datasource="failed-first"} 0`,
+		`loki_label_cardinality_scrape_errors_total{datasource="failed-first"} 1`,
+	}
+	for _, line := range want {
+		if !strings.Contains(body, line) {
+			t.Errorf("missing line:\n  %s\nin body:\n%s", line, body)
+		}
+	}
+}

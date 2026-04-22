@@ -65,6 +65,7 @@ type State struct {
 	lastDuration  map[string]time.Duration
 	scrapeErrors  map[string]int64
 	lastErrorText map[string]string
+	scrapeSuccess map[string]bool // last scrape succeeded? — exposed as 0/1 gauge
 }
 
 func newState() *State {
@@ -74,6 +75,7 @@ func newState() *State {
 		lastDuration:  map[string]time.Duration{},
 		scrapeErrors:  map[string]int64{},
 		lastErrorText: map[string]string{},
+		scrapeSuccess: map[string]bool{},
 	}
 }
 
@@ -183,11 +185,13 @@ func scrapeAll(cfg *Config, state *State, lookback time.Duration) {
 			if err != nil {
 				state.scrapeErrors[ds.Name]++
 				state.lastErrorText[ds.Name] = err.Error()
+				state.scrapeSuccess[ds.Name] = false
 				log.Printf("[%s] scrape error (%.2fs): %v", ds.Name, dur.Seconds(), err)
 				return
 			}
 			state.cardinality[ds.Name] = cards
 			state.lastErrorText[ds.Name] = ""
+			state.scrapeSuccess[ds.Name] = true
 			log.Printf("[%s] scraped ok: %d labels, dur=%.2fs",
 				ds.Name, len(cards), dur.Seconds())
 		}(ds)
@@ -214,8 +218,20 @@ func metricsHandler(state *State) http.HandlerFunc {
 
 		fmt.Fprintln(w, "# HELP loki_label_cardinality Unique value count per label, per Loki datasource.")
 		fmt.Fprintln(w, "# TYPE loki_label_cardinality gauge")
-		dsNames := make([]string, 0, len(state.cardinality))
+		// Union of all datasource names seen — so datasources that failed their
+		// first scrape still show up in scrape_success=0 / scrape_errors_total.
+		dsSet := map[string]struct{}{}
 		for ds := range state.cardinality {
+			dsSet[ds] = struct{}{}
+		}
+		for ds := range state.lastScrape {
+			dsSet[ds] = struct{}{}
+		}
+		for ds := range state.scrapeErrors {
+			dsSet[ds] = struct{}{}
+		}
+		dsNames := make([]string, 0, len(dsSet))
+		for ds := range dsSet {
 			dsNames = append(dsNames, ds)
 		}
 		sort.Strings(dsNames)
@@ -255,6 +271,17 @@ func metricsHandler(state *State) http.HandlerFunc {
 		for _, ds := range dsNames {
 			fmt.Fprintf(w, "loki_label_cardinality_scrape_errors_total{datasource=%q} %d\n",
 				escapeLabelValue(ds), state.scrapeErrors[ds])
+		}
+
+		fmt.Fprintln(w, "# HELP loki_label_cardinality_scrape_success 1 if the last scrape of this datasource succeeded, 0 otherwise.")
+		fmt.Fprintln(w, "# TYPE loki_label_cardinality_scrape_success gauge")
+		for _, ds := range dsNames {
+			v := 0
+			if state.scrapeSuccess[ds] {
+				v = 1
+			}
+			fmt.Fprintf(w, "loki_label_cardinality_scrape_success{datasource=%q} %d\n",
+				escapeLabelValue(ds), v)
 		}
 
 		fmt.Fprintln(w, "# HELP loki_label_cardinality_build_info Build metadata.")
